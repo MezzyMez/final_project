@@ -23,7 +23,7 @@ def load_and_prepare_data(file_path):
         & (df_filtered['GEO'] == 'Canada') 
         & (df_filtered['Products and product groups'].isin(valid_products))
         & (df_filtered['SCALAR_ID'] == 0)
-        & (df_filtered['REF_DATE'] > '1945-01-01')
+        & (df_filtered['REF_DATE'] >= '1949-01-01')
         ]
     
 
