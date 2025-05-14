@@ -12,16 +12,16 @@ def load_and_prepare_data(file_path):
     df = pd.read_csv(file_path)
 
     # Read the edited product groups and filter for valid products
-    edited_products = pd.read_csv('data/processed/products_and_product_groups_edited.csv')
-    valid_products = edited_products['Product Group'].tolist()
-    df_filtered = df[df['Products and product groups'].isin(valid_products)]
+    edited_products_groups = pd.read_csv('data/processed/discrete_cpi_components.csv')
+    valid_products_groups = edited_products_groups['Product Group'].tolist()
+    df_filtered = df[df['Products and product groups'].isin(valid_products_groups)]
 
 
     # Filter for desired columns values
     df_filtered = df_filtered[
-        (df_filtered['UOM_ID'] == 17) 
+        (df_filtered['Products and product groups'].isin(valid_products_groups))
+        & (df_filtered['UOM_ID'] == 17) 
         & (df_filtered['GEO'] == 'Canada') 
-        & (df_filtered['Products and product groups'].isin(valid_products))
         & (df_filtered['SCALAR_ID'] == 0)
         & (df_filtered['REF_DATE'] > '1948-12-31')
         ]
