@@ -42,6 +42,39 @@ def main(skip_download=False):
     print("\n--- Running CPI drivers analysis ---")
     run_cpi_drivers_analysis(wide_path)
 
+    # 5. Additional Analyses & Visualizations
+    print("\n--- Running anomaly detection analysis ---")
+    from src.visualization.anomaly_detection import detect_anomalies
+    detect_anomalies(
+        processed_path=processed_path,
+        output_path='reports/figures/anomalous_groups.png',
+        z_thresh=3,
+        top_n=10
+    )
+
+    print("\n--- Running inverse correlation analysis ---")
+    from src.visualization.inverse_correlation_chart import plot_inverse_correlations
+    plot_inverse_correlations(
+        processed_path=processed_path,
+        output_path='reports/figures/inverse_correlation_groups.png',
+        top_n=10
+    )
+
+    print("\n--- Plotting CPI level time series ---")
+    from src.visualization.time_series_cpi_level import plot_cpi_level
+    plot_cpi_level(
+        processed_path=processed_path,
+        output_path='reports/figures/time_series_cpi_level.png'
+    )
+
+    print("\n--- Plotting time series comparison ---")
+    from src.visualization.time_series_comparison import plot_time_series_comparison
+    plot_time_series_comparison(
+        processed_path=processed_path,
+        output_path='reports/figures/time_series_recreational_vs_cpi.png',
+        group_name='Purchase of recreational vehicles and outboard motors'
+    )
+
     print("\nPipeline complete! Check the reports/figures directory for results.")
 
 if __name__ == "__main__":

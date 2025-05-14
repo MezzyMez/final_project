@@ -73,6 +73,7 @@ def run_cpi_drivers_analysis(input_file):
     plt.savefig('reports/figures/actual_vs_predicted_no_gas.png')
     plt.close()
     feature_importances['cumulative_importance'] = feature_importances['importance'].cumsum()
+    # Plot cumulative importance with 80% line
     plt.figure(figsize=(12, 6))
     plt.plot(range(1, len(feature_importances) + 1), feature_importances['cumulative_importance'], 'b-')
     plt.axhline(y=0.8, color='r', linestyle='--', label='80% of total importance')
@@ -84,6 +85,48 @@ def run_cpi_drivers_analysis(input_file):
     plt.tight_layout()
     plt.savefig('reports/figures/cumulative_importance_no_gas.png')
     plt.close()
+
+    # --- Elbow detection (geometric method) ---
+    cum_imp = feature_importances['cumulative_importance'].values
+    n_features = len(cum_imp)
+    # Line from first to last point
+    all_indices = np.arange(n_features)
+    line_vec = np.array([n_features-1, cum_imp[-1]]) - np.array([0, cum_imp[0]])
+    line_vec = line_vec / np.linalg.norm(line_vec)
+    # Vector from first point to each point
+    point_vecs = np.vstack([all_indices, cum_imp - cum_imp[0]]).T
+    # Project onto line, subtract to get orthogonal distance
+    proj = np.dot(point_vecs, line_vec)
+    proj_point = np.outer(proj, line_vec)
+    orth_vec = point_vecs - proj_point
+    dists = np.linalg.norm(orth_vec, axis=1)
+    elbow_idx = np.argmax(dists)
+
+    # Plot cumulative importance with elbow annotation
+    plt.figure(figsize=(12, 6))
+    plt.plot(range(1, n_features + 1), cum_imp, 'b-', label='Cumulative Importance')
+    plt.axhline(y=0.8, color='r', linestyle='--', label='80% of total importance')
+    plt.scatter(elbow_idx + 1, cum_imp[elbow_idx], color='orange', zorder=5, label=f'Elbow (feature {elbow_idx+1})')
+    plt.xlabel('Number of Features')
+    plt.ylabel('Cumulative Importance')
+    plt.title('Cumulative Feature Importance with Elbow (Excluding Gas/Fuel)')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig('reports/figures/cumulative_importance_elbow_no_gas.png')
+    plt.close()
+
+    # Bar chart of top features up to elbow
+    top_elbow = feature_importances.head(elbow_idx + 1)
+    plt.figure(figsize=(12, 8))
+    sns.barplot(data=top_elbow, x='importance', y='feature', color='dodgerblue')
+    plt.title(f'Top {elbow_idx+1} Most Important Drivers (Elbow Point)')
+    plt.xlabel('Feature Importance')
+    plt.ylabel('CPI Component')
+    plt.tight_layout()
+    plt.savefig('reports/figures/top_drivers_elbow_no_gas.png')
+    plt.close()
+
     n_features_80 = len(feature_importances[feature_importances['cumulative_importance'] <= 0.8])
     print(f"\nNumber of features needed to explain 80% of variance: {n_features_80}")
     print("\nThese features are:")

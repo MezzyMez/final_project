@@ -1,25 +1,22 @@
-# Data Science Bootcamp Final Project: Canadian CPI Analysis
+# Canadian CPI Analysis
 
 ## Project Overview
-This project analyzes the drivers of the Canadian Consumer Price Index (CPI) using data from Statistics Canada. It includes data acquisition, cleaning, exploratory analysis, feature engineering, machine learning modeling, and visualization of key findings.
+This project analyzes the drivers of the Canadian Consumer Price Index (CPI) using data from Statistics Canada. The workflow includes data acquisition, cleaning, exploratory analysis, feature engineering, machine learning modeling, and visualization of key findings.
 
 ## Folder Structure
 ```
 data/
     raw/           # Unmodified, original data downloads
-    interim/       # Data after initial cleaning/processing
     processed/     # Final, analysis-ready datasets
-    external/      # Any external datasets (macroeconomic, etc.)
 
-notebooks/         # Jupyter/Colab notebooks for EDA, prototyping
+notebooks/         # (Reserved for EDA or prototyping)
 
-src/               # All reusable code modules/scripts
-    data/          # Data loading, cleaning, feature engineering
-    models/        # Modeling, training, evaluation scripts
-    visualization/ # Plotting and dashboard code
-    utils.py       # Utility functions (to be added)
+src/
+    data/          # Data loading, cleaning, feature engineering scripts
+    models/        # Modeling and analysis scripts
+    visualization/ # Additional plotting and analysis scripts
 
-reports/           # Final reports, presentations, exported plots
+reports/
     figures/       # All generated figures and plots
 
 requirements.txt
@@ -35,35 +32,31 @@ main.py
 
 2. **Data Cleaning & Processing**
    - Scripts: `src/data/explore.py`, `src/data/refine.py`
-   - Output: Cleaned/interim data in `data/interim/`, final in `data/processed/`
+   - Output: Cleaned and processed data in `data/processed/`
 
-3. **Exploratory Data Analysis (EDA)**
-   - Notebooks: `notebooks/eda.ipynb`
-   - Output: Insights, figures in `reports/figures/`
+3. **Feature Engineering**
+   - Script: `src/data/refine.py`
+   - Output: Wide-format dataset in `data/processed/`
 
-4. **Feature Engineering**
-   - Scripts: `src/data/feature_engineering.py` (to be added)
-   - Output: Feature datasets in `data/processed/`
-
-5. **Modeling & Evaluation**
-   - Scripts: `src/models/cpi_drivers_analysis.py`
-   - Output: Model artifacts, evaluation metrics, plots in `reports/`
-
-6. **Visualization & Communication**
-   - Scripts: `src/visualization/` (to be added)
-   - Output: Plots, dashboards in `reports/`
-
-7. **Reporting**
-   - Reports: `reports/final_report.pdf`, `reports/presentation.pptx` (to be added)
+4. **Modeling, Evaluation & Visualization**
+   - Scripts: `src/models/cpi_drivers_analysis.py` and all scripts in `src/visualization/` (all called by `main.py`)
+   - Output: Model metrics, feature importances, anomaly detection, inverse correlation, and time series plots in `reports/figures/`
 
 ## Getting Started
 1. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-2. Run data acquisition and processing scripts as needed.
-3. Explore the data and results in notebooks and reports.
+2. Run the full pipeline (all analyses and visualizations):
+   ```bash
+   python main.py
+   ```
+   - To skip data download and use existing data, add `--skip-download`:
+     ```bash
+     python main.py --skip-download
+     ```
+3. Review results in the `reports/figures/` directory.
 
 ---
 
-*Update this README as you add new analyses, models, or reports!*
+This project and all analyses were completed by me as part of my Data Science Bootcamp final project. All code, analysis, and documentation reflect my own work and learning.
