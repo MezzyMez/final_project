@@ -21,12 +21,3 @@ def process_cpi_data(input_file, output_file):
     print(f"Processed data saved to {output_file}")
     
     return pivot_df
-
-if __name__ == "__main__":
-    input_file = "data/processed/cpi_processed.csv"
-    output_file = "data/processed/cpi_wide_format.csv"
-    
-    processed_df = process_cpi_data(input_file, output_file)
-    print("\nDataFrame shape:", processed_df.shape)
-    print("\nFirst few rows of processed data:")
-    print(processed_df.head())

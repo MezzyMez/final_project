@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 import urllib3
-from io import StringIO, BytesIO
+from io import BytesIO
 import json
 import zipfile
 import re
@@ -89,7 +89,7 @@ def getTableCSV(product_id, language="en"):
         
         if not zip_url:
             print("Error: No download URL found in response")
-            return None
+            return None, None
             
         # Download the ZIP file
         print(f"\nDownloading ZIP from: {zip_url}")
@@ -112,22 +112,20 @@ def getTableCSV(product_id, language="en"):
         print(f"Unexpected error: {e}")
         return None, None
 
-if __name__ == "__main__":
-    # Example usage
-    product_id = "18100004"
+def download_table_csv(product_id, output_dir='data/raw'):
+    """
+    Downloads a specific table's CSV data from Statistics Canada and saves it.
+    Returns the output file path or None.
+    """
     df, table_name = getTableCSV(product_id)
-    
     if df is not None:
-        print("\nDataFrame Info:")
-        print(df.info())
-        print("\nFirst few rows:")
-        print(df.head())
-        
-        # Create output filename using table name if available
         if table_name:
-            output_file = f"data/raw/{to_snake_case(table_name)}.csv"
+            output_file = os.path.join(output_dir, f"{to_snake_case(table_name)}.csv")
         else:
-            output_file = f"data/raw/table_{product_id}.csv"
-            
+            output_file = os.path.join(output_dir, f"table_{product_id}.csv")
         df.to_csv(output_file, index=False)
         print(f"\nData saved to {output_file}")
+        return output_file
+    else:
+        print(f"Failed to download table for product_id {product_id}")
+        return None

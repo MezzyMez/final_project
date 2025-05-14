@@ -12,10 +12,9 @@ def load_and_prepare_data(file_path):
     df = pd.read_csv(file_path)
 
     # Read the edited product groups and filter for valid products
-    edited_products_groups = pd.read_csv('data/processed/discrete_cpi_components.csv')
+    edited_products_groups = pd.read_csv('data/processed/products_and_product_groups_edited.csv')
     valid_products_groups = edited_products_groups['Product Group'].tolist()
     df_filtered = df[df['Products and product groups'].isin(valid_products_groups)]
-
 
     # Filter for desired columns values
     df_filtered = df_filtered[
@@ -26,7 +25,6 @@ def load_and_prepare_data(file_path):
         & (df_filtered['REF_DATE'] > '1948-12-31')
         ]
     
-
     # Drop undesired columns
     df_filtered = df_filtered.drop(columns=['DGUID', 'UOM', 'UOM_ID', 'STATUS', 'SYMBOL', 'TERMINATED', 'DECIMALS', 'VECTOR', 'COORDINATE', 'SCALAR_FACTOR', 'SCALAR_ID'])
 
@@ -148,24 +146,3 @@ def plot_cpi_analysis(df):
     fig.update_xaxes(title_text="Date", row=2, col=1)
 
     return fig
-
-def main():
-    # File paths
-    input_file = 'data/raw/consumer_price_index_monthly_not_seasonally_adjusted.csv'
-    output_file = 'data/processed/cpi_processed.csv'
-    
-    # Load and prepare data
-    df = load_and_prepare_data(input_file)
-    
-    # Export processed data
-    export_processed_data(df, output_file)
-    
-    # Describe the data
-    describe_data(df)
-    
-    # Create and show the plots
-    # fig = plot_cpi_analysis(df)
-    # fig.show()
-
-if __name__ == "__main__":
-    main()

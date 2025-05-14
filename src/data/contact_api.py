@@ -48,21 +48,18 @@ def contactStatsCanAPI(endpoint, payload={}):
         print("Response content:", response.text if 'response' in locals() else "No response available")
         return None
 
-if __name__ == "__main__":
-    # Example usage
+def fetch_stats_can_tables(output_path='data/raw/stats_can_available_tables.csv'):
+    """
+    Fetches all available tables from Statistics Canada and saves to CSV.
+    """
     tables_df = contactStatsCanAPI("getAllCubesListLite")
     if tables_df is not None:
-        print("\nDataFrame Info:")
-        print(tables_df.info())
-
-        # Select only the desired columns
         selected_columns = ['productId', 'cansimId', 'cubeTitleEn']
         df_selected = tables_df[selected_columns]
-
-        print("\nFirst few rows:")
-        print(tables_df.head(20))
-
-        # Save the dataframe to a csv file
-        tables_df.to_csv('../data/raw/stats_can_available_tables.csv', index=False)
-        print("\nData saved to 'stats_can_available_tables.csv'")
+        df_selected.to_csv(output_path, index=False)
+        print(f"\nData saved to '{output_path}'")
+        return output_path
+    else:
+        print("Failed to fetch tables from Statistics Canada API.")
+        return None
 

@@ -51,4 +51,26 @@ Thumbs.db
 
 # Large files
 !data/raw/.gitkeep
-!data/processed/.gitkeep 
+!data/processed/.gitkeep
+
+# Ignore data files
+data/raw/*
+data/interim/*
+data/external/*
+data/processed/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/external/.gitkeep
+!data/processed/.gitkeep
+
+# Ignore reports and figures
+reports/figures/*
+!reports/figures/.gitkeep
+reports/*.pdf
+reports/*.pptx
+
+# Ignore notebook checkpoints
+notebooks/.ipynb_checkpoints/
+
+# Ignore system files
+.DS_Store 
