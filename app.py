@@ -137,8 +137,8 @@ def update_graph(group_name, start_date, end_date, rolling_opts, highlight_thres
         diff = rolling_group - rolling_cpi
     else:
         diff = merged['Rate_of_Change_Group'] - merged['Rate_of_Change_CPI']
-    highlight_pos = diff > highlight_thresh
-    highlight_neg = diff < -highlight_thresh
+    highlight_pos = (diff > highlight_thresh).tolist()
+    highlight_neg = (diff < -highlight_thresh).tolist()
 
     # Bar traces
     bars = go.Bar(
