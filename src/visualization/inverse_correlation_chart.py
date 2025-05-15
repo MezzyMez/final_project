@@ -5,8 +5,12 @@ import os
 def plot_inverse_correlations(processed_path, output_path, top_n=10):
     df = pd.read_csv(processed_path)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    df = df[df['GEO'] == 'Canada']
     pivot = df.pivot(index='REF_DATE', columns='Products and product groups', values='Rate_of_Change')
     pivot = pivot.dropna(axis=1, how='all')
+    if 'All-items' not in pivot.columns or pivot.shape[1] < 2:
+        print('Not enough data for Canada to compute inverse correlations.')
+        return
     correlations = pivot.corr()['All-items'].sort_values()
     # Exclude 'All-items' itself
     correlations = correlations[correlations.index != 'All-items']
@@ -14,7 +18,7 @@ def plot_inverse_correlations(processed_path, output_path, top_n=10):
     plt.figure(figsize=(10, 6))
     plt.barh(top_inverse.index, top_inverse.values, color='seagreen')
     plt.xlabel('Correlation with All-items (CPI)')
-    plt.title(f'Top {top_n} Product Groups Most Inversely Correlated with Inflation')
+    plt.title(f'Top {top_n} Product Groups Most Inversely Correlated with Inflation\nCanada')
     plt.gca().invert_yaxis()
     plt.tight_layout()
     plt.savefig(output_path)

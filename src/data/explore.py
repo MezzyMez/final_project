@@ -20,7 +20,7 @@ def load_and_prepare_data(file_path):
     df_filtered = df_filtered[
         (df_filtered['Products and product groups'].isin(valid_products_groups))
         & (df_filtered['UOM_ID'] == 17) 
-        & (df_filtered['GEO'] == 'Canada') 
+        # & (df_filtered['GEO'] == 'Canada')  # Removed to include all jurisdictions
         & (df_filtered['SCALAR_ID'] == 0)
         & (df_filtered['REF_DATE'] > '1948-12-31')
         ]
@@ -32,8 +32,8 @@ def load_and_prepare_data(file_path):
     df_filtered['REF_DATE'] = pd.to_datetime(df_filtered['REF_DATE'])
     df_filtered = df_filtered.sort_values(['Products and product groups', 'REF_DATE'])
 
-    # Calculate rate of change within each product group
-    df_filtered['Rate_of_Change'] = df_filtered.groupby('Products and product groups')['VALUE'].pct_change() * 100
+    # Calculate rate of change within each GEO and product group
+    df_filtered['Rate_of_Change'] = df_filtered.groupby(['GEO', 'Products and product groups'])['VALUE'].pct_change() * 100
 
     return df_filtered
 

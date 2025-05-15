@@ -21,6 +21,37 @@ default_start = max_date.replace(year=max_date.year - 10)
 if default_start < min_date:
     default_start = min_date
 
+# Define province and city lists
+province_options = [
+    'Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador',
+    'Nova Scotia', 'Ontario', 'Prince Edward Island', 'Quebec', 'Saskatchewan'
+]
+city_options = [
+    'Calgary, Alberta', 'Charlottetown and Summerside, Prince Edward Island', 'Edmonton, Alberta',
+    'Halifax, Nova Scotia', 'Iqaluit, Nunavut', 'Montréal, Quebec', 'Ottawa-Gatineau, Ontario part, Ontario/Quebec',
+    'Québec, Quebec', 'Regina, Saskatchewan', 'Saint John, New Brunswick', 'Saskatoon, Saskatchewan',
+    "St. John's, Newfoundland and Labrador", 'Thunder Bay, Ontario', 'Toronto, Ontario',
+    'Vancouver, British Columbia', 'Victoria, British Columbia', 'Whitehorse, Yukon',
+    'Winnipeg, Manitoba', 'Yellowknife, Northwest Territories'
+]
+
+# Province to cities mapping
+province_to_cities = {
+    'Alberta': ['Calgary, Alberta', 'Edmonton, Alberta'],
+    'British Columbia': ['Vancouver, British Columbia', 'Victoria, British Columbia'],
+    'Manitoba': ['Winnipeg, Manitoba'],
+    'New Brunswick': ['Saint John, New Brunswick'],
+    'Newfoundland and Labrador': ["St. John's, Newfoundland and Labrador"],
+    'Nova Scotia': ['Halifax, Nova Scotia'],
+    'Ontario': ['Ottawa-Gatineau, Ontario part, Ontario/Quebec', 'Thunder Bay, Ontario', 'Toronto, Ontario'],
+    'Prince Edward Island': ['Charlottetown and Summerside, Prince Edward Island'],
+    'Quebec': ['Montréal, Quebec', 'Québec, Quebec'],
+    'Saskatchewan': ['Regina, Saskatchewan', 'Saskatoon, Saskatchewan'],
+}
+
+# All cities list
+all_cities = [c for cities in province_to_cities.values() for c in cities]
+
 # App setup with Bootstrap theme
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 app.title = 'CPI Interactive Explorer'
@@ -28,6 +59,38 @@ app.title = 'CPI Interactive Explorer'
 controls = dbc.Card([
     dbc.CardBody([
         html.H2('Canadian CPI Explorer', className='card-title mb-4'),
+        dbc.Row([
+            dbc.Col([
+                html.Label('Country:', className='mb-1'),
+                dcc.Dropdown(
+                    id='country-dropdown',
+                    options=[{'label': 'Canada', 'value': 'Canada'}],
+                    value='Canada',
+                    clearable=False,
+                    style={'width': '100%'}
+                ),
+            ], md=4),
+            dbc.Col([
+                html.Label('Province:', className='mb-1'),
+                dcc.Dropdown(
+                    id='province-dropdown',
+                    options=[{'label': p, 'value': p} for p in province_options],
+                    value=None,
+                    placeholder='Select a province',
+                    style={'width': '100%'}
+                ),
+            ], md=4),
+            dbc.Col([
+                html.Label('City:', className='mb-1'),
+                dcc.Dropdown(
+                    id='city-dropdown',
+                    options=[{'label': c, 'value': c} for c in all_cities],
+                    value=None,
+                    placeholder='Select a city',
+                    style={'width': '100%'}
+                ),
+            ], md=4),
+        ], className='mb-3'),
         dbc.Row([
             dbc.Col([
                 html.Div([
@@ -133,6 +196,44 @@ app.layout = dbc.Container([
 ], fluid=True, style={'maxWidth': 1000, 'margin': 'auto'})
 
 @app.callback(
+    Output('city-dropdown', 'options'),
+    Output('city-dropdown', 'value'),
+    Input('province-dropdown', 'value'),
+)
+def update_city_options(selected_province):
+    if selected_province and selected_province in province_to_cities:
+        options = [{'label': c, 'value': c} for c in province_to_cities[selected_province]]
+        return options, None  # Reset city selection when province changes
+    else:
+        options = [{'label': c, 'value': c} for c in all_cities]
+        return options, None
+
+@app.callback(
+    Output('group-dropdown', 'options'),
+    Output('group-dropdown', 'value'),
+    Input('country-dropdown', 'value'),
+    Input('province-dropdown', 'value'),
+    Input('city-dropdown', 'value'),
+    State('group-dropdown', 'value'),
+)
+def update_group_options(country, province, city, current_group):
+    # Determine which GEO to use
+    if city:
+        geo = city
+    elif province:
+        geo = province
+    else:
+        geo = country if country else 'Canada'
+    # Get product groups available for this GEO
+    available_groups = sorted(df[df['GEO'] == geo]['Products and product groups'].unique())
+    if 'All-items' in available_groups:
+        available_groups.remove('All-items')
+    options = [{'label': g, 'value': g} for g in available_groups]
+    # Set value to current_group if still available, else default to first available
+    value = current_group if current_group in available_groups else (available_groups[0] if available_groups else None)
+    return options, value
+
+@app.callback(
     Output('cpi-comparison-graph', 'figure'),
     Output('summary-stats', 'children'),
     Output('correlation-scorecard', 'children'),
@@ -143,11 +244,20 @@ app.layout = dbc.Container([
     Input('date-range', 'start_date'),
     Input('date-range', 'end_date'),
     Input('rolling-checkbox', 'value'),
-    Input('highlight-threshold', 'value')
+    Input('highlight-threshold', 'value'),
+    Input('province-dropdown', 'value'),
+    Input('city-dropdown', 'value'),
 )
-def update_graph(group_name, start_date, end_date, rolling_opts, highlight_thresh):
-    df_cpi = df[df['Products and product groups'] == 'All-items']
-    df_group = df[df['Products and product groups'] == group_name]
+def update_graph(group_name, start_date, end_date, rolling_opts, highlight_thresh, province, city):
+    # Determine which GEO to use
+    if city:
+        geo = city
+    elif province:
+        geo = province
+    else:
+        geo = 'Canada'
+    df_cpi = df[(df['Products and product groups'] == 'All-items') & (df['GEO'] == geo)]
+    df_group = df[(df['Products and product groups'] == group_name) & (df['GEO'] == geo)]
     merged = pd.merge(
         df_cpi[['REF_DATE', 'Rate_of_Change']],
         df_group[['REF_DATE', 'Rate_of_Change']],
@@ -239,7 +349,7 @@ def update_graph(group_name, start_date, end_date, rolling_opts, highlight_thres
     else:
         fig = go.Figure([bars, line_cpi, line_group])
     fig.update_layout(
-        title=f'Rate of Change: All-items (CPI) vs. {group_name}',
+        title=f'Rate of Change: {group_name} vs. All-items (CPI)',
         xaxis_title='Date',
         yaxis_title='Monthly Rate of Change (%)',
         legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),

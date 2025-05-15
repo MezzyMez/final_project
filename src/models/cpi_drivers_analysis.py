@@ -22,7 +22,12 @@ def run_cpi_drivers_analysis(input_file):
         'Fuel, parts and supplies for passenger vehicles'
     ]
     df = df.drop(columns=[col for col in df.columns if any(gas in col for gas in gas_components)])
-    df_pct_change = df.pct_change().dropna()
+    # Only calculate pct_change on numeric columns (product groups)
+    product_group_cols = df.columns.difference(['REF_DATE', 'GEO'])
+    df_pct_change = df[product_group_cols].pct_change()
+    df_pct_change = df_pct_change.replace([np.inf, -np.inf], np.nan).dropna()
+    # If you need REF_DATE and GEO for reference, you can add them back:
+    # df_pct_change = pd.concat([df[['REF_DATE', 'GEO']].iloc[1:].reset_index(drop=True), df_pct_change.reset_index(drop=True)], axis=1)
     X = df_pct_change.drop('All-items', axis=1)
     y = df_pct_change['All-items']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
