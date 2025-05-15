@@ -1,8 +1,9 @@
 import pandas as pd  # type: ignore
 import plotly.graph_objs as go  # type: ignore
-from dash import Dash, dcc, html, Input, Output  # type: ignore
+from dash import Dash, dcc, html, Input, Output, State  # type: ignore
 import dash_bootstrap_components as dbc  # type: ignore
 from datetime import datetime
+from dash.dependencies import State
 
 # Load data
 DATA_PATH = 'data/processed/cpi_processed.csv'
@@ -34,7 +35,7 @@ controls = dbc.Card([
                     dcc.Dropdown(
                         id='group-dropdown',
                         options=[{'label': g, 'value': g} for g in product_groups],  # type: ignore
-                        value=product_groups[0],
+                        value='Transportation',
                         style={'width': '100%'}
                     ),
                 ])
@@ -57,7 +58,7 @@ controls = dbc.Card([
             dbc.Col([
                 dcc.Checklist(
                     id='rolling-checkbox',
-                    options=[{'label': 'Show 6-month rolling average', 'value': 'show_rolling'}],
+                    options=[{'label': 'Show 6-month rolling average', 'value': 'show_rolling'}],  # type: ignore
                     value=['show_rolling'],
                     className='mb-2',
                     inputStyle={"margin-right": "8px"}
@@ -89,12 +90,39 @@ app.layout = dbc.Container([
             dbc.Row([
                 dbc.Col(html.Div(id='correlation-scorecard', className='text-center'), width='auto'),
                 dbc.Col(html.Div(id='correlation-coeff', className='text-center'), width='auto'),
+                dbc.Col(
+                    dbc.Button(
+                        "Show Top Correlated Groups",
+                        id="open-sidebar-btn",
+                        color="info",
+                        outline=True,
+                        className="ms-3",
+                        size="sm",
+                        style={
+                            'fontWeight': 'bold',
+                            'fontSize': '0.95rem',
+                            'padding': '0.25em 0.7em',
+                            'verticalAlign': 'middle',
+                            'lineHeight': '1.1',
+                        }
+                    ),
+                    width="auto"
+                ),
             ], justify='center', align='center', className='mb-2'),
         ], md=12)
     ]),
     dbc.Row([
         dbc.Col(dcc.Graph(id='cpi-comparison-graph', style={'marginTop': '0.5rem'}), md=12)
     ]),
+    dbc.Offcanvas(
+        id="top-correlated-sidebar",
+        title="Top 10 Most Highly Correlated Product Groups",
+        is_open=False,
+        placement="end",
+        backdrop=False,
+        style={"width": "400px"},
+        children=html.Div(id="top-correlated-table", className="p-2")
+    ),
     dbc.Row([
         dbc.Col(html.Div(id='summary-stats', style={'marginTop': 20}), md=12)
     ]),
@@ -110,6 +138,7 @@ app.layout = dbc.Container([
     Output('correlation-scorecard', 'children'),
     Output('correlation-coeff', 'children'),
     Output('selected-group-title', 'children'),
+    Output('top-correlated-table', 'children'),
     Input('group-dropdown', 'value'),
     Input('date-range', 'start_date'),
     Input('date-range', 'end_date'),
@@ -229,6 +258,7 @@ def update_graph(group_name, start_date, end_date, rolling_opts, highlight_thres
 
     # Calculate correlations for all product groups for the selected date range
     all_corrs = []
+    all_corrs_dict = {}
     for group in product_groups:
         group_df = df[df['Products and product groups'] == group]
         merged_all = pd.merge(
@@ -247,6 +277,7 @@ def update_graph(group_name, start_date, end_date, rolling_opts, highlight_thres
             c = merged_all['Rate_of_Change_Group'].corr(merged_all['Rate_of_Change_CPI'])
             if pd.notnull(c):
                 all_corrs.append(c)
+                all_corrs_dict[group] = c
     # Compute percentile
     if len(all_corrs) > 0:
         sorted_corrs = sorted(all_corrs)
@@ -261,15 +292,47 @@ def update_graph(group_name, start_date, end_date, rolling_opts, highlight_thres
             score_label = 'Low'
             score_color = 'danger'
         scorecard = dbc.Badge(f'{score_label} correlation', color=score_color, className='ms-2', style={'fontSize': '1.2rem', 'fontWeight': 'bold', 'padding': '0.7em 1.2em', 'verticalAlign': 'middle'})
+        # Top 10 correlated groups table with title and ranking
+        top_corr = sorted(all_corrs_dict.items(), key=lambda x: x[1], reverse=True)[:10]
+        table_header = [html.Thead(html.Tr([html.Th('Rank'), html.Th('Product Group'), html.Th('Correlation')]))]
+        table_rows = []
+        for idx, (group, val) in enumerate(top_corr, 1):
+            if group == group_name:
+                row = html.Tr([
+                    html.Td(dbc.Badge(f"#{idx}", color='primary', className='me-2', style={'fontWeight': 'bold'})),
+                    html.Td(dbc.Badge(group, color='primary', className='me-2', style={'fontWeight': 'bold'})),
+                    html.Td(html.B(f'{val:.2f}'))
+                ], style={'backgroundColor': '#f5f5f5'})
+            else:
+                row = html.Tr([
+                    html.Td(f"#{idx}"),
+                    html.Td(group),
+                    html.Td(f'{val:.2f}')
+                ])
+            table_rows.append(row)
+        table_body = [html.Tbody(table_rows)]
+        top_corr_table = dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, striped=True, className='mt-2')
     else:
         scorecard = None
+        top_corr_table = None
 
     stats = f"**Summary for {group_name} vs. All-items (CPI):**  \n"
     stats += f"Mean difference: {diff.mean():.2f}%  \n"
     stats += f"Std deviation: {diff.std():.2f}%  \n"
     stats += f"Max difference: {diff.max():.2f}%  \n"
     stats += f"Min difference: {diff.min():.2f}%  \n"
-    return fig, dcc.Markdown(stats), scorecard, corr_display, group_name
+    return fig, dcc.Markdown(stats), scorecard, corr_display, group_name, top_corr_table
+
+@app.callback(
+    Output("top-correlated-sidebar", "is_open"),
+    Input("open-sidebar-btn", "n_clicks"),
+    State("top-correlated-sidebar", "is_open"),
+    prevent_initial_call=True
+)
+def toggle_sidebar(n, is_open):
+    if n:
+        return not is_open
+    return is_open
 
 if __name__ == '__main__':
     app.run(debug=False) 
