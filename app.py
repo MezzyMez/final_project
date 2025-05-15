@@ -1,6 +1,6 @@
-import pandas as pd
-import plotly.graph_objs as go
-from dash import Dash, dcc, html, Input, Output
+import pandas as pd  # type: ignore
+import plotly.graph_objs as go  # type: ignore
+from dash import Dash, dcc, html, Input, Output  # type: ignore
 from datetime import datetime
 
 # Load data
@@ -28,7 +28,7 @@ app.layout = html.Div([
     html.Label('Select Product Group:'),
     dcc.Dropdown(
         id='group-dropdown',
-        options=[{'label': g, 'value': g} for g in product_groups],
+        options=[{'label': g, 'value': g} for g in product_groups],  # type: ignore
         value=product_groups[0],
         style={'width': '60%'}
     ),
