@@ -59,4 +59,4 @@ main.py
 
 ---
 
-This project and all analyses were completed by me as part of my Data Science Bootcamp final project. All code, analysis, and documentation reflect my own work and learning.
+This project and all analyses were completed by James McCulloch as part of Lighthouse Labs Data Science Bootcamp final project. All code, analysis, and documentation reflect my own work and learning.

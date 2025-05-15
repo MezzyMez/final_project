@@ -30,10 +30,10 @@ def load_and_prepare_data(file_path):
 
     # Convert REF_DATE to datetime and sort
     df_filtered['REF_DATE'] = pd.to_datetime(df_filtered['REF_DATE'])
-    df_filtered = df_filtered.sort_values('REF_DATE')
+    df_filtered = df_filtered.sort_values(['Products and product groups', 'REF_DATE'])
 
-    # Calculate rate of change
-    df_filtered['Rate_of_Change'] = df_filtered['VALUE'].pct_change() * 100
+    # Calculate rate of change within each product group
+    df_filtered['Rate_of_Change'] = df_filtered.groupby('Products and product groups')['VALUE'].pct_change() * 100
 
     return df_filtered
 
@@ -146,3 +146,16 @@ def plot_cpi_analysis(df):
     fig.update_xaxes(title_text="Date", row=2, col=1)
 
     return fig
+
+def print_recreational_vehicles_1984_1986(processed_path):
+    """
+    Print VALUE and Rate_of_Change for 'Purchase of recreational vehicles and outboard motors' from 1984 to 1986.
+    """
+    df = pd.read_csv(processed_path)
+    mask = (
+        (df['Products and product groups'] == 'Purchase of recreational vehicles and outboard motors') &
+        (df['REF_DATE'] >= '1984-01-01') &
+        (df['REF_DATE'] <= '1986-12-31')
+    )
+    subset = df.loc[mask, ['REF_DATE', 'VALUE', 'Rate_of_Change']]
+    print(subset.to_string(index=False))
