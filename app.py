@@ -4,6 +4,10 @@ from dash import Dash, dcc, html, Input, Output, State  # type: ignore
 import dash_bootstrap_components as dbc  # type: ignore
 from datetime import datetime
 from dash.dependencies import State
+from src.models.inflation_predictor import InflationPredictor
+import plotly.express as px
+import numpy as np
+import os
 
 # Load data
 DATA_PATH = 'data/processed/cpi_processed.csv'
@@ -53,8 +57,10 @@ province_to_cities = {
 all_cities = [c for cities in province_to_cities.values() for c in cities]
 
 # App setup with Bootstrap theme
-app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'CPI Interactive Explorer'
+
+ml_predictor = InflationPredictor('data/processed/cpi_processed.csv')
 
 controls = dbc.Card([
     dbc.CardBody([
@@ -140,6 +146,32 @@ controls = dbc.Card([
                 ),
             ], md=6),
         ]),
+        dbc.Row([
+            dbc.Col([
+                html.Label('Enter % Change for Selected Group:', className='mb-1'),
+                dcc.Input(
+                    id='percent-change-input',
+                    type='number',
+                    value=5,
+                    min=-100,
+                    max=100,
+                    step=0.1,
+                    style={'width': '100%'}
+                ),
+            ], md=6),
+            dbc.Col([
+                html.Br(),
+                dbc.Button(
+                    "Predict Inflation Impact",
+                    id="predict-btn",
+                    color="primary",
+                    className="mt-2",
+                    n_clicks=0,
+                    style={'width': '100%'}
+                ),
+            ], md=6),
+        ], className='mb-3'),
+        html.Div(id='ml-prediction-output', className='mb-3'),
     ])
 ], className='mb-4 shadow-sm')
 
@@ -444,5 +476,28 @@ def toggle_sidebar(n, is_open):
         return not is_open
     return is_open
 
+@app.callback(
+    Output('ml-prediction-output', 'children'),
+    Input('predict-btn', 'n_clicks'),
+    State('group-dropdown', 'value'),
+    State('percent-change-input', 'value')
+)
+def predict_inflation(n_clicks, group, percent_change):
+    if n_clicks == 0 or group is None or percent_change is None:
+        return ""
+    # Convert percent to decimal
+    change_decimal = percent_change / 100.0
+    user_change = {group: change_decimal}
+    correlated_changes = ml_predictor.get_correlated_changes(user_change)
+    inflation_impact = ml_predictor.predict_inflation_impact(correlated_changes)
+    # Show top 5 correlated changes
+    top_corr = sorted(correlated_changes.items(), key=lambda x: abs(x[1]), reverse=True)[:5]
+    top_corr_str = html.Ul([html.Li(f"{k}: {v:.2%}") for k, v in top_corr])
+    return html.Div([
+        html.H5(f"Predicted Overall Inflation Impact: {inflation_impact:.2%}"),
+        html.H6("Top Correlated Product Group Changes (applied):"),
+        top_corr_str
+    ])
+
 if __name__ == '__main__':
-    app.run(debug=False) 
+    app.run(debug=False, port=8051) 
